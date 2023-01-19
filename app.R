@@ -126,11 +126,13 @@ line_plotly <-
            plotly = TRUE, 
            x_limits = c(1882,2022), 
            x_breaks = seq(1882,2022,10),
+           y_breaks = NULL,
+           y_limits = NULL,
            x_an = NULL,
            y_an = NULL,
            lab_an = NULL,
            leg_txt_size = 10.5,
-           scale_type = scales::comma,
+           scale_type = NULL,
            ...){
     
     #set colours
@@ -154,7 +156,8 @@ line_plotly <-
                          values = cols) +
       scale_y_continuous(trans = log,
                          labels = scale_type,
-                         ...) +
+                         limits = y_limits,
+                         breaks = y_breaks) +
       annotate('text', x = x_an, y = y_an, label = lab_an) +
       theme_minimal() +
       theme(
@@ -181,6 +184,37 @@ line_plotly <-
       
     }
   }
+
+find_min_max <- function(df, col, min = T){
+  
+  if(min == T){
+    out <-
+      df %>% 
+      select({{col}}) %>% 
+      pull() %>% 
+      min()
+  }
+  else{
+    out <-
+      df %>% 
+      select({{col}}) %>% 
+      pull() %>% 
+      max()  
+  }
+  
+  return(out)
+}
+
+round_all_numeric <- function(df, dig){
+  out <-
+    df %>% 
+    mutate_if(is.numeric,
+              round,
+              digits = dig)
+  
+  return(out)
+    
+}
 
 ######################################################################
 #create final data frames
@@ -210,6 +244,78 @@ stock_temp <-
   mutate(bonds_rr_indx = 
            calc_index(bonds_rr_indx, bonds_rr , 1))
 
+
+min_yr <- 
+  find_min_max(australianstockmarket, 
+                       year, 
+                       min = T)
+max_yr <- 
+  find_min_max(australianstockmarket, 
+                       year, 
+                       min = F)
+
+
+# function to create index values based on minimum and maximum input years.
+create_index_df <- function(real = F, 
+                            min_year = min_yr, 
+                            max_year = max_yr ){
+  
+  df <- 
+    australianstockmarket %>%
+    filter(between(year, min_year, max_year)) %>% 
+    mutate(across(-c(year,inflation), 
+                  ~calc_real_return(., inflation), .names = '{.col}_rr')) %>% 
+    mutate(across(c(stock_accumulation,stock_price,bonds,inflation), 
+                  ~ifelse(year == min_year, 100, NA), .names = '{.col}_indx')) %>% 
+    mutate(stock_accumulation_indx = 
+             calc_index(stock_accumulation_indx, stock_accumulation , 1)) %>% 
+    mutate(stock_price_indx = 
+             calc_index(stock_price_indx, stock_price , 1))  %>% 
+    mutate(bonds_indx = 
+             calc_index(bonds_indx, bonds , 1)) %>% 
+    mutate(inflation_indx = 
+             calc_index(inflation_indx, inflation , 1)) %>%
+    mutate(across(c(stock_accumulation_rr,stock_price_rr,bonds_rr), 
+                  ~ifelse(year == min_year, 100, NA), .names = '{.col}_indx')) %>% 
+    mutate(stock_accumulation_rr_indx = 
+             calc_index(stock_accumulation_rr_indx, stock_accumulation_rr , 1)) %>% 
+    mutate(stock_price_rr_indx = 
+             calc_index(stock_price_rr_indx, stock_price_rr , 1))  %>% 
+    mutate(bonds_rr_indx = 
+             calc_index(bonds_rr_indx, bonds_rr , 1))
+  
+  
+  if(real == F){
+    out <- 
+      df %>% 
+      select(-contains("rr")) %>% 
+      select(year, ends_with('indx')) %>% 
+      mutate(across(c(-year), 
+                    ~ifelse(year == min_year, 100, .))) %>% 
+      convert_to_tidy(val_to_name = 'dollars') %>% 
+      mutate(market = recode(market,'bonds_indx' = 'Bonds 10yr',
+                             'stock_price_indx' = 'Stock Price',
+                             'stock_accumulation_indx' = 'Stock Price + Div')) %>% 
+      filter(market != "inflation_indx") %>% 
+      round_all_numeric(.,0)
+  }
+  else{
+    out <-
+      df %>% select(year, contains("rr")) %>% 
+      select(year, ends_with('indx')) %>% 
+      mutate(across(c(-year), 
+                    ~ifelse(year == min_year, 100, .))) %>% 
+      convert_to_tidy(val_to_name = 'dollars') %>% 
+      mutate(market = recode(market,'bonds_rr_indx' = 'Bonds 10yr',
+                             'stock_price_rr_indx' = 'Stock Price',
+                             'stock_accumulation_rr_indx' = 'Stock Price + Div')) %>% 
+      filter(market != "inflation_indx") %>% 
+      round_all_numeric(.,0)  
+      
+    
+  }
+  
+}
 
 #create nominal and real dataframes for returns and index in long format    
 stock_returns_nom <-
@@ -248,11 +354,14 @@ stock_index_real <-
                          'stock_price_rr_indx' = 'Stock Price',
                          'stock_accumulation_rr_indx' = 'Stock Price + Div'))
 
-rm(stock_temp)
+
+
+
+
 
 #set href links
 ref_brail_2008 <- "https://research.bond.edu.au/en/publications/re-examination-of-the-historical-equity-risk-premium-in-australia"
-ref_brail_2012 <- "https://research.bond.edu.au/en/publications/the-historical-equity-risk-premium-in-australia-post-gfc-and-128"
+ref_brail_2012 <- "https://research.bond.edu.au/en/publications/the-historical-equity-risk-premium-in-australia-post-gfc-and-128-"
 ref_snp <- "https://www.spglobal.com/spdji/en/indices/equity/all-ordinaries/#overview"
 ref_rba <- "https://www.rba.gov.au/statistics/tables"
 ref_abs <- "https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/consumer-price-index-australia/latest-release"
@@ -279,10 +388,19 @@ ui <- fluidPage(
                                    
                                    tags$br(),
                                    materialSwitch(inputId = "index_plot_type", label = "Adjust for inflation", value = FALSE, status = 'info'),
+                                   tags$br(),
+                                   sliderInput("slider_index_plot", 
+                                               label = h3("Select year range"), 
+                                               min = find_min_max(stock_temp, year, min = T), 
+                                               max = find_min_max(stock_temp, year, min = F), 
+                                               value = c(1882, find_min_max(stock_temp, year, min = F)),
+                                               sep = ""),
                                    
+                                   
+                                   tags$br(),
                                    tags$div(tags$p(HTML("<br><br>
                        Data sources: ")),
-                       tags$ul(tags$li(tags$a(href=ref_snp, "S&P Down Jones Indices")),
+                       tags$ul(tags$li(tags$a(href=ref_snp, "S&P Dow Jones Indices")),
                                tags$br(),
                                tags$li(tags$a(href=ref_rba, "Reserve Bank of Australia")),
                                tags$br(),
@@ -297,10 +415,19 @@ ui <- fluidPage(
                                    
                                    tags$br(),
                                    materialSwitch(inputId = "returns_plot_type", label = "Adjust for inflation", value = FALSE, status = 'info'),
-                                   
+                                   tags$br(),
+                                   sliderInput("slider_returns_plot", 
+                                               label = h3("Select year range"), 
+                                               min = find_min_max(stock_temp, year, min = T), 
+                                               max = find_min_max(stock_temp, year, min = F), 
+                                               value = c(1882, find_min_max(stock_temp, year, min = F)),
+                                               sep = ""),
+                  
+                
+                                  tags$br(),
                                    tags$div(tags$p(HTML("<br><br>
                        Data sources: ")),
-                       tags$ul(tags$li(tags$a(href=ref_snp, "S&P Down Jones Indices")),
+                       tags$ul(tags$li(tags$a(href=ref_snp, "S&P Dow Jones Indices")),
                                tags$br(),
                                tags$li(tags$a(href=ref_rba, "Reserve Bank of Australia")),
                                tags$br(),
@@ -315,7 +442,16 @@ ui <- fluidPage(
                                    
                                    tags$br(),
                                    materialSwitch(inputId = "rolling_plot_type", label = "Adjust for inflation", value = FALSE, status = 'info'),
+                                   tags$br(),
+                                   sliderInput("slider_rolling_returns_plot", 
+                                               label = h3("Select year range"), 
+                                               min = find_min_max(stock_temp, year, min = T), 
+                                               max = find_min_max(stock_temp, year, min = F), 
+                                               value = c(1882, find_min_max(stock_temp, year, min = F)),
+                                               sep = ""),
                                    
+                                   
+                                   tags$br(),
                                    tags$br(),
                                    selectizeInput('rolling_years_input', 'Select rolling years: ',
                                                   choices = seq(3,21,by = 1),
@@ -324,7 +460,7 @@ ui <- fluidPage(
                                    
                                    tags$div(tags$p(HTML("<br>
                        Data sources: ")),
-                       tags$ul(tags$li(tags$a(href=ref_snp, "S&P Down Jones Indices")),
+                       tags$ul(tags$li(tags$a(href=ref_snp, "S&P Dow Jones Indices")),
                                tags$br(),
                                tags$li(tags$a(href=ref_rba, "Reserve Bank of Australia")),
                                tags$br(),
@@ -338,7 +474,7 @@ ui <- fluidPage(
                                    
                                    tags$div(tags$p(HTML("<br><br>
                        Data sources: ")),
-                       tags$ul(tags$li(tags$a(href=ref_snp, "S&P Down Jones Indices")),
+                       tags$ul(tags$li(tags$a(href=ref_snp, "S&P Dow Jones Indices")),
                                tags$br(),
                                tags$li(tags$a(href=ref_rba, "Reserve Bank of Australia")),
                                tags$br(),
@@ -364,7 +500,9 @@ ui <- fluidPage(
                                                     height = 600),
                                        tags$br(),
                                        tags$br(),
-                                       DT::dataTableOutput("index_table")),
+                                       DT::dataTableOutput("index_table"),
+                                       tags$br(),
+                                       tags$figcaption("Values in each market column are in dollars (AUD)")),
                               tabPanel("Returns",
                                        fluid = T, 
                                        value = 2, 
@@ -373,7 +511,9 @@ ui <- fluidPage(
                                                     height = 600),
                                        tags$br(),
                                        tags$br(),
-                                       DT::dataTableOutput("returns_table")),
+                                       DT::dataTableOutput("returns_table"),
+                                       tags$br(),
+                                       tags$figcaption("Values in each market column are annualised returns in percent year on year")),
                               tabPanel("Rolling Returns",
                                        fluid = T, 
                                        value = 3, 
@@ -382,7 +522,9 @@ ui <- fluidPage(
                                                     height = 600),
                                        tags$br(),
                                        tags$br(),
-                                       DT::dataTableOutput("rolling_returns_table")),
+                                       DT::dataTableOutput("rolling_returns_table"),
+                                       tags$br(),
+                                       tags$figcaption("Values in each market column are annualised returns in percent")),
                               tabPanel("About",
                                        fluid = T, 
                                        value = 4, 
@@ -413,6 +555,25 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram ############################# 
 server <- function(input, output) {
+  
+  data_index_plot_reactive <- reactive({
+    
+    if(input$index_plot_type == FALSE){
+    out <-
+      create_index_df(
+        real = F,
+        min_year = input$slider_index_plot[1],
+        max_year = input$slider_index_plot[2])  
+    }else{
+    out <- 
+      create_index_df(
+        real = T,
+        min_year = input$slider_index_plot[1],
+        max_year = input$slider_index_plot[2])
+    }
+    
+  })
+  
   data_index_plot <- reactive({
     if(input$index_plot_type == FALSE){
       out <- stock_index_nom 
@@ -422,40 +583,85 @@ server <- function(input, output) {
   })
   
   data_returns_plot <- reactive({
+    
     if(input$returns_plot_type == FALSE){
-      out <- stock_returns_nom 
+      out <- stock_returns_nom %>% 
+        filter(between(year, 
+                       input$slider_returns_plot[1], 
+                       input$slider_returns_plot[2])) %>% 
+        filter(market != "inflation") 
     }else{
-      out <- stock_returns_real
+      out <- stock_returns_real %>% 
+        filter(between(year, 
+                       input$slider_returns_plot[1], 
+                       input$slider_returns_plot[2])) %>% 
+        filter(market != "inflation") 
     }
   })
   
   data_rolling_returns_plot <- reactive({
+    
     if(input$rolling_plot_type == FALSE){
       out <- 
         create_rr_df(stock_index_nom, 
                      filter = T, 
                      no_years = as.numeric(input$rolling_years_input)) %>% 
-        filter(market != "inflation_indx")
+        filter(market != "inflation_indx") %>% 
+        filter(between(year, 
+                       input$slider_rolling_returns_plot[1], 
+                       input$slider_rolling_returns_plot[2])) %>% 
+        round_all_numeric(.,2)
     }else{
       out <- 
         create_rr_df(stock_index_real, 
                      filter = T, 
                      no_years = as.numeric(input$rolling_years_input)) %>% 
-        filter(market != "inflation_indx")
+        filter(market != "inflation_indx") %>% 
+        filter(between(year, 
+                       input$slider_rolling_returns_plot[1], 
+                       input$slider_rolling_returns_plot[2])) %>% 
+        round_all_numeric(.,2)
     }
   })
   
   output$index_plot <- renderPlotly({
     
-    data_index_plot() %>% 
-      filter(market != "inflation_indx") %>% 
-      line_plotly(x_col = year, 
+    
+    if(input$slider_returns_plot[2]-input$slider_returns_plot[1] > 10){
+      break_number <- 10
+      
+    } else{
+      
+      break_number <- (input$slider_returns_plot[2]-input$slider_returns_plot[1])
+    }
+    
+    max_dollars <- 
+      data_index_plot_reactive() %>% 
+      find_min_max(dollars, min = F)
+    
+    min_dollars <-
+      data_index_plot_reactive() %>% 
+      find_min_max(dollars, min = T)
+    
+    if(min_dollars > 100){
+      min_dollars <- 100
+    }
+      
+    
+    data_index_plot_reactive() %>% 
+         
+    line_plotly(x_col = year, 
                   y_col = dollars,
                   colour_col = market,
                   log = "log10",
+                  scale_type = scales::comma,
+                  x_limits = c(input$slider_index_plot[1],input$slider_index_plot[2]),
+                  y_limits = c(min_dollars,max_dollars),
+                  x_breaks = scales::breaks_pretty(break_number),
+                  y_breaks = scales::trans_breaks('log10', function(x) 10^x),
                   x_an = 1892,
                   y_an = 50,
-                  breaks = c(100,1000,10000,100000,1000000,10000000,100000000),
+                  # breaks = c(100,1000,10000,100000,1000000,10000000,100000000),
                   lab_an = "$100 invested",
                   user_axis_x_lab = T,
                   user_axis_y_lab = T,
@@ -472,11 +678,14 @@ server <- function(input, output) {
   })
   
   output$index_table <- DT::renderDT({
+
+    
     DT::datatable(
-      data = data_index_plot() %>% 
-        filter(market != "inflation_indx"),
+      data = data_index_plot_reactive() %>% 
+        pivot_wider(names_from = market, 
+                    values_from = dollars),
       selection = list(target = 'column'),
-      filter = list(position = 'top', clear = FALSE),
+      # filter = list(position = 'top', clear = TRUE),
       rownames = FALSE,
       extensions = 'Buttons',
       options = list(orderClasses = TRUE,
@@ -506,12 +715,22 @@ server <- function(input, output) {
   
   output$returns_plot <- renderPlotly({
     
+    if(input$slider_returns_plot[2]-input$slider_returns_plot[1] > 10){
+      break_number <- 10
+      
+    } else{
+      
+      break_number <- (input$slider_returns_plot[2]-input$slider_returns_plot[1])
+    }
+    
     data_returns_plot() %>% 
-      filter(market != "inflation") %>% 
       line_plotly(x_col = year, 
                   y_col = percent_yoy,
                   colour_col = market,
-                  scale_type = scales::percent,
+                  y_breaks = scales::breaks_pretty(6),
+                  scale_type = scales::percent_format(accuracy=1),
+                  x_limits = c(input$slider_returns_plot[1],input$slider_returns_plot[2]),
+                  x_breaks = scales::breaks_pretty(break_number),
                   plotly = T,
                   user_axis_x_lab = T,
                   user_axis_y_lab = T,
@@ -529,7 +748,9 @@ server <- function(input, output) {
   
   output$returns_table <- DT::renderDT({
     DT::datatable(
-      data = data_returns_plot(),
+      data = data_returns_plot() %>% 
+        pivot_wider(names_from = market, 
+                    values_from = percent_yoy),
       selection = list(target = 'column'),
       filter = list(position = 'top', clear = FALSE),
       rownames = FALSE,
@@ -561,12 +782,22 @@ server <- function(input, output) {
   
   output$rolling_returns_plot <- renderPlotly({
     
+    if(input$slider_returns_plot[2]-input$slider_returns_plot[1] > 10){
+      break_number <- 10
+      
+    } else{
+      
+      break_number <- (input$slider_returns_plot[2]-input$slider_returns_plot[1])
+    }
+    
     data_rolling_returns_plot() %>% 
-      filter(market != "inflation") %>% 
       line_plotly(x_col = year, 
                   y_col = percent,
                   colour_col = market,
-                  scale_type = scales::percent,
+                  y_breaks = scales::breaks_pretty(6),
+                  scale_type = scales::percent_format(accuracy=1),
+                  x_limits = c(input$slider_rolling_returns_plot[1],input$slider_rolling_returns_plot[2]),
+                  x_breaks = scales::breaks_pretty(break_number),
                   plotly = T,
                   user_axis_x_lab = T,
                   user_axis_y_lab = T,
@@ -585,7 +816,9 @@ server <- function(input, output) {
   output$rolling_returns_table <- DT::renderDT({
     DT::datatable(
       data = data_rolling_returns_plot() %>% 
-        filter(market != "inflation"),
+        filter(market != "inflation") %>%
+        pivot_wider(names_from = market, 
+                    values_from = percent),
       selection = list(target = 'column'),
       filter = list(position = 'top', clear = FALSE),
       rownames = FALSE,
