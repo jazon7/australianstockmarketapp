@@ -216,6 +216,51 @@ round_all_numeric <- function(df, dig){
     
 }
 
+#function to calculate cagr between two given years
+calc_cagr <- function(df, year_1, year_2, which_market){
+  
+  n <- year_2 - year_1
+  
+  cagr_1 <- 
+    df %>% 
+    filter(year == c(year_1)) %>% 
+    filter(market == which_market) %>% 
+    select(dollars) %>% 
+    pull()
+  
+  cagr_2 <- 
+    df %>% 
+    filter(year == c(year_2)) %>% 
+    filter(market == which_market) %>% 
+    select(dollars) %>% 
+    pull()
+  
+  cagr <- 
+    (cagr_2/cagr_1)^(1/n)-1
+  
+  return(signif(cagr,3) * 100)
+  
+}
+
+
+calc_table <- function(df, year_1, year_2){
+  
+  n <- year_2 - year_1
+  
+  df <-
+    df %>% 
+    filter(year %in% c(year_1,year_2)) %>% 
+    group_by(market) %>% 
+    mutate(cagr = signif((dollars/lag(dollars,1))^(1/n)-1),3) %>%
+    filter(year == year_2) %>% 
+    select(market, cagr) %>% 
+    pivot_wider(names_from = market, values_from = cagr)
+
+  
+  return(df)
+  
+}
+
 ######################################################################
 #create final data frames
 ######################################################################
@@ -500,6 +545,11 @@ ui <- fluidPage(
                                                     height = 600),
                                        tags$br(),
                                        tags$br(),
+                                       tags$h4("Annualised Returns"), 
+                                       DT::dataTableOutput("index_cagr_table"),
+                                       tags$br(),
+                                       tags$br(),
+                                       tags$h4("Data output"), 
                                        DT::dataTableOutput("index_table"),
                                        tags$br(),
                                        tags$figcaption("Values in each market column are in dollars (AUD)")),
@@ -624,9 +674,10 @@ server <- function(input, output) {
     }
   })
   
+  
   output$index_plot <- renderPlotly({
     
-    
+
     if(input$slider_returns_plot[2]-input$slider_returns_plot[1] > 10){
       break_number <- 10
       
@@ -711,6 +762,33 @@ server <- function(input, output) {
                      columnDefs = list(list(className = 'dt-center', targets = "_all"))
                      
       ))
+  })
+  
+  
+  output$index_cagr_table <- renderDataTable({
+
+    req(data = data_index_plot_reactive())
+
+    data <- 
+      calc_table(data_index_plot_reactive(),
+                       input$slider_index_plot[1],
+                       input$slider_index_plot[2]) 
+
+    caption <- 
+      paste0("Between ",  input$slider_index_plot[1] , " and " ,input$slider_index_plot[2])
+   
+    
+     DT::datatable(
+      data = data,
+      caption = caption,
+      rownames = FALSE,
+      options = list(
+        paging = FALSE,
+        info = FALSE,
+        searching = FALSE,
+        columnDefs = list(list(className = 'dt-center', targets = "_all")))
+      )  %>% 
+      formatPercentage(1:3,2)
   })
   
   output$returns_plot <- renderPlotly({
