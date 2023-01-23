@@ -5,9 +5,9 @@ account: jazon-data
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 8051397
-bundleId: 6757708
+bundleId: 6761832
 url: https://jazon-data.shinyapps.io/australianstockmarketapp/
-when: 1674281516.28335
-lastSyncTime: 1674281516.28336
+when: 1674432091.37875
+lastSyncTime: 1674432091.37876
 asMultiple: FALSE
 asStatic: FALSE

@@ -1,5 +1,6 @@
 library(shiny)
 library(shinyWidgets)
+library(shinyjs)
 library(tidyverse)
 library(lubridate)
 library(plotly)
@@ -8,6 +9,7 @@ library(rvest)
 library(DT)
 library(thematic)
 library(showtext)
+
 
 options(warn=-1)
 options(scipen = 999)
@@ -133,6 +135,8 @@ line_plotly <-
            lab_an = NULL,
            leg_txt_size = 10.5,
            scale_type = NULL,
+           add_cycles = FALSE,
+           cycles_data = NULL,
            ...){
     
     #set colours
@@ -142,12 +146,18 @@ line_plotly <-
     plot <- 
       df %>%
       ggplot(aes(x = {{x_col}}, 
-                 y = {{y_col}}, 
-                 colour = {{colour_col}})) +
-      geom_line(linetype = 1,
+                 y = {{y_col}})) +
+      geom_line(aes(colour = {{colour_col}}),
+                linetype = 1,
                 lwd = 0.7) +
       geom_hline(yintercept = hline_intercept,
                  colour = hline_colour) +
+      {if(add_cycles == T) geom_line(
+        data = cycles_data, 
+        aes(x = x, y = y),
+        linetype = 2,
+        lwd = 0.2
+      )} +
       {if(user_axis_x_lab == T)xlab(x_label)} +
       {if(user_axis_y_lab == T)ylab(y_label)} +
       scale_x_continuous(limits = x_limits,
@@ -256,6 +266,41 @@ calc_table <- function(df, year_1, year_2){
     select(market, cagr) %>% 
     pivot_wider(names_from = market, values_from = cagr)
 
+  
+  return(df)
+  
+}
+
+#function to create a sinewave dataframe
+make_sine_wave <- 
+  function(var1,
+           var2, 
+           freq_in_months, 
+           y_range = 0.2, 
+           up_sample = 100,
+           offset = 0){
+    
+  # length of x axis 
+  x_range <- var2 - var1
+  
+  # y axis range (i.e. difference)
+  y_range <- c(0, y_range)
+  
+  #convert from months to years and take inverse 
+  freq <- freq_in_months/12
+  freq <- 1/freq
+  
+  offset <- offset/12
+  
+  #create dataframe of x and y
+  x1 <- 1:(x_range*up_sample)/up_sample
+  amp <- (y_range[2] - y_range[1])/2
+  y1 <- amp*cos(2*pi*freq*x1) + amp
+  
+  df <- 
+    data.frame(x = x1, y = y1) %>% 
+    mutate(y = y - y_range[2]/2) %>% 
+    mutate(x = x + var1 + offset)
   
   return(df)
   
@@ -484,7 +529,7 @@ ui <- fluidPage(
                   ),
                   
                   conditionalPanel(condition = "input.tabselected==3", 
-                                   
+                                   useShinyjs(),
                                    tags$br(),
                                    materialSwitch(inputId = "rolling_plot_type", label = "Adjust for inflation", value = FALSE, status = 'info'),
                                    tags$br(),
@@ -502,7 +547,13 @@ ui <- fluidPage(
                                                   choices = seq(3,21,by = 1),
                                                   
                                                   selected = 3),
-                                   
+                                   tags$br(),
+                                   tags$br(),
+                                   materialSwitch(inputId = "add_cycles", label = "Add cycles", value = FALSE, status = 'info'),
+                                   tags$br(),
+                                   hidden(numericInput("cycle_months", "Months per cycle:", 120, min = 1, max = 480),
+                                   tags$br(),
+                                   numericInput("cycle_months_offset", "Months offset:", 0, min = 1, max = 480)),
                                    tags$div(tags$p(HTML("<br>
                        Data sources: ")),
                        tags$ul(tags$li(tags$a(href=ref_snp, "S&P Dow Jones Indices")),
@@ -605,6 +656,26 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram ############################# 
 server <- function(input, output) {
+  
+  observeEvent(input$add_cycles, {
+    if(input$add_cycles == FALSE){
+      shinyjs::hide("cycle_months")
+      shinyjs::hide("cycle_months_offset")
+    } else {
+      shinyjs::show("cycle_months")
+      shinyjs::show("cycle_months_offset")
+    }
+  })
+  
+  data_cycles <- reactive({
+    
+    out <- 
+      make_sine_wave(input$slider_rolling_returns_plot[1],
+                     input$slider_rolling_returns_plot[2], 
+                     input$cycle_months,
+                     offset = input$cycle_months_offset)
+    
+  })
   
   data_index_plot_reactive <- reactive({
     
@@ -868,6 +939,19 @@ server <- function(input, output) {
       break_number <- (input$slider_returns_plot[2]-input$slider_returns_plot[1])
     }
     
+    if(input$add_cycles == FALSE){
+      cycles <- FALSE
+      cycles_input <- NULL
+      
+    }
+    else{
+      cycles <- TRUE
+      cycles_input <- data_cycles()
+        
+      
+    }
+    
+    print(cycles_input)
     data_rolling_returns_plot() %>% 
       line_plotly(x_col = year, 
                   y_col = percent,
@@ -880,7 +964,9 @@ server <- function(input, output) {
                   user_axis_x_lab = T,
                   user_axis_y_lab = T,
                   x_label = "Year",
-                  y_label = "Percent") %>% 
+                  y_label = "Percent",
+                  add_cycles = cycles,
+                  cycles_data = cycles_input) %>% 
       layout(legend = list(orientation = "h",
                            side = 'top',
                            traceorder = 'normal',
