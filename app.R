@@ -155,7 +155,7 @@ line_plotly <-
       {if(add_cycles == T) geom_line(
         data = cycles_data, 
         aes(x = x, y = y),
-        linetype = 2,
+        linetype = 1,
         lwd = 0.2
       )} +
       {if(user_axis_x_lab == T)xlab(x_label)} +
@@ -276,7 +276,8 @@ make_sine_wave <-
   function(var1,
            var2, 
            freq_in_months, 
-           y_range = 0.2, 
+           y_min = 0,
+           y_max = 0.2, 
            up_sample = 100,
            offset = 0){
     
@@ -284,7 +285,7 @@ make_sine_wave <-
   x_range <- var2 - var1
   
   # y axis range (i.e. difference)
-  y_range <- c(0, y_range)
+  y_range <- c(y_min, y_max)
   
   #convert from months to years and take inverse 
   freq <- freq_in_months/12
@@ -669,13 +670,38 @@ server <- function(input, output) {
   
   data_cycles <- reactive({
     
+    cycles_y_max <- 
+      data_rolling_returns_plot() %>% 
+      pivot_wider(names_from = market, 
+                  values_from = percent) %>% 
+      select(-year, -roll_years) %>% 
+      sapply(., max, na.rm = TRUE) %>% 
+      max(na.rm = TRUE)
+    
+    cycles_y_min <- 
+      data_rolling_returns_plot() %>% 
+      pivot_wider(names_from = market, 
+                  values_from = percent) %>% 
+      select(-year, -roll_years) %>% 
+      sapply(., min, na.rm = TRUE) %>% 
+      min(na.rm = TRUE)
+    
+    cycles_y_mx <-
+      (cycles_y_max - cycles_y_min) / 2
+    
+    cycles_y_mn <-
+      (cycles_y_mx / 2) * -1
+
     out <- 
       make_sine_wave(input$slider_rolling_returns_plot[1],
                      input$slider_rolling_returns_plot[2], 
-                     input$cycle_months,
+                     freq_in_months = input$cycle_months,
+                     y_min = cycles_y_mn,
+                     y_max = cycles_y_mx,
                      offset = input$cycle_months_offset)
     
   })
+  
   
   data_index_plot_reactive <- reactive({
     
@@ -951,7 +977,7 @@ server <- function(input, output) {
       
     }
     
-    print(cycles_input)
+    
     data_rolling_returns_plot() %>% 
       line_plotly(x_col = year, 
                   y_col = percent,
@@ -982,7 +1008,8 @@ server <- function(input, output) {
       data = data_rolling_returns_plot() %>% 
         filter(market != "inflation") %>%
         pivot_wider(names_from = market, 
-                    values_from = percent),
+                    values_from = percent) %>% 
+        filter(if_all(c(`Stock Price`), ~ !is.na(.))),
       selection = list(target = 'column'),
       filter = list(position = 'top', clear = FALSE),
       rownames = FALSE,
