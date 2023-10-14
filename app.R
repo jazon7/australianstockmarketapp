@@ -15,7 +15,7 @@ options(warn=-1)
 options(scipen = 999)
 
 app_theme <- 
-  bslib::bs_theme(bootswatch = "simplex",
+  bslib::bs_theme(bootswatch = "zephyr",
                   base_font = bslib::font_google("Open Sans"))
 
 ####################################
@@ -459,7 +459,7 @@ ref_abs <- "https://www.abs.gov.au/statistics/economy/price-indexes-and-inflatio
 
 
 
-# Define UI for application that draws a histogram ############################# 
+# Define UI for application ############################# 
 ui <- fluidPage(
 
   theme = app_theme,
@@ -469,7 +469,7 @@ ui <- fluidPage(
   ),
   
   
-  titlePanel("Australian Stock Market History"),
+  titlePanel("Australian Stock Market App"),
   
   tags$br(),
   
