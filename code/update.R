@@ -501,7 +501,6 @@ latest_year <-
   find_max_column(dec_ord, 
                   year)
 
-
 #check if current month is March of the update year and if so update the dataset
 if (month(Sys.Date()) == 3 & year(Sys.Date()) == update_year){
   print("Updating Data. This may take a while..........")
