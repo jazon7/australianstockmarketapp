@@ -307,11 +307,12 @@ make_sine_wave <-
   
 }
 
+
 ######################################################################
 #create final data frames
 ######################################################################
 australianstockmarket <- 
-  readRDS("australianstockmarket.RDS")
+  readRDS("data/australianstockmarket.RDS")
 
 #create new real return column and index columns for nominal and real returns
 stock_temp <- 
