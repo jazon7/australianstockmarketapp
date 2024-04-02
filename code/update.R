@@ -515,13 +515,13 @@ if (month(Sys.Date()) %in% c(3,4,5,6,7,8,9,10,11) & year(Sys.Date()) == update_y
   drop_na() %>%
     saveRDS("data/australianstockmarket.RDS")
 
-  australianstockmarket %>%
-    write.csv("data/australianstockmarket.csv")
-  
-  print("Stock market series has been updated")
+    print("Stock market series has been updated")
   
   australianstockmarket <- 
     readRDS("data/australianstockmarket.RDS")
+  
+  australianstockmarket %>%
+    write.csv("data/australianstockmarket.csv")
   
 } else{
   print(paste0("Data not available until ", update_date, ". Try again on this date."))
