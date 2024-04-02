@@ -71,6 +71,10 @@ dec_summary <- function(df){
 ##########################################################################
 download_file <- function(url, file_name, mode, type){
   
+  headers = c(
+    `user-agent` = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.61 Safari/537.36'
+  )
+  
   dest_file <-
     paste0("./data/",
            file_name,
@@ -80,7 +84,8 @@ download_file <- function(url, file_name, mode, type){
     print(paste0("Downloading... ", file_name, type, "....."))
     download.file(url = url,
                   destfile = dest_file,
-                  mode = mode)
+                  mode = mode,
+                  headers = headers)
   } else if (file.exists(dest_file)
              & find_create_date_of_file("data/cpi.xlsx") < update_date
              & Sys.Date() > update_date)
@@ -88,7 +93,8 @@ download_file <- function(url, file_name, mode, type){
     print(paste0("Updating... ", file_name, type, "....."))
     download.file(url = url,
                   destfile = dest_file,
-                  mode = mode)
+                  mode = mode,
+                  headers = headers)
     
   }else{
     print(paste0(file_name,type," is up to date"))
@@ -179,8 +185,7 @@ download_file(url =
                 "https://www.rba.gov.au/statistics/tables/xls/f02d.xlsx",
               file_name = "bonds",
               mode = "wb",
-              type = ".xlsx"
-)
+              type = ".xlsx")
 
 #download cpi index from ABS
 download_file(cpi_xlsx_file,
@@ -301,7 +306,7 @@ cpi$date <-
 cpi <- 
   cpi %>% 
   mutate(pct_change_yoy = (index - lag(index,4)) / lag(index,4)) %>% 
-  as.tibble()
+  as_tibble()
 
 cpi <- 
   clean_df(cpi)
@@ -502,14 +507,19 @@ latest_year <-
                   year)
 
 #check if current month is March of the update year and if so update the dataset
-if (month(Sys.Date()) == 3 & year(Sys.Date()) == update_year){
+if (month(Sys.Date()) %in% c(3,4,5,6,7,8,9,10,11) & year(Sys.Date()) == update_year){
   print("Updating Data. This may take a while..........")
+ 
   update_data(australianstockmarket,
               latest_year) %>% 
-  drop_na()
-  saveRDS("data/australianstockmarket.RDS")
-  write.csv("data/australianstockmarket.csv")
+  drop_na() %>%
+    saveRDS("data/australianstockmarket.RDS")
+
+  australianstockmarket %>%
+    write.csv("data/australianstockmarket.csv")
+  
   print("Stock market series has been updated")
+  
   australianstockmarket <- 
     readRDS("data/australianstockmarket.RDS")
   
