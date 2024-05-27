@@ -800,7 +800,6 @@ server <- function(input, output) {
       
     
     data_index_plot_reactive() %>% 
-         
     line_plotly(x_col = year, 
                   y_col = dollars,
                   colour_col = market,
