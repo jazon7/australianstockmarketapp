@@ -1,7 +1,8 @@
 library(rvest)
 library(tidyverse)
 library(readxl)
-
+library(httr)
+library(writexl)
 
 # README ------------------------------------------------------------------
 # Execute this code to update the Australian Stock Market Annual Returns to
@@ -16,8 +17,14 @@ library(readxl)
 
 #import the base dataset
 australianstockmarket <- 
-  readRDS("data/australianstockmarket.RDS")
-
+  readRDS("data/archive/australianstockmarket_2023.RDS") %>% 
+  rbind(data.frame(
+    year = 1882,
+    stock_accumulation = NA, 
+    stock_price = NA, 
+    bonds = NA, 
+    inflation = NA  
+  ), .)
 #set the update year as the first of March of the next year in the series
 update_year <- 
   australianstockmarket$year %>% 
@@ -169,16 +176,37 @@ cpi_xlsx_file <-
 
 
 #download All Ordinaries Total Return index fromspglobal to data directory
-download_file(url = "https://www.spglobal.com/spdji/en/idsexport/file.xls?hostIdentifier=48190c8c-42c4-46af-8d1a-0cd5db894797&redesignExport=true&languageId=1&selectedModule=PerformanceGraphView&selectedSubModule=Graph&yearFlag=tenYearFlag&indexId=124632",
-              file_name = "ord_tr",
-              mode = "wb",
-              type = ".xls")
+url <- "https://www.spglobal.com/spdji/en/idsexport/file.xls?hostIdentifier=48190c8c-42c4-46af-8d1a-0cd5db894797&redesignExport=true&languageId=1&selectedModule=PerformanceGraphView&selectedSubModule=Graph&yearFlag=tenYearFlag&indexId=124632"
+
+headers <- c(
+  "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+)
+
+response <- httr::GET(url, add_headers(.headers=headers))
+
+if (status_code(response) == 200) {
+  writeBin(content(response, "raw"), "data/ord_tr.xls")
+  print("File downloaded successfully")
+} else {
+  print(paste("Failed to download file. Status code:", status_code(response)))
+}
 
 #download All Ordinaries Price index from spglobal to data directory
-download_file(url = "https://www.spglobal.com/spdji/en/idsexport/file.xls?hostIdentifier=48190c8c-42c4-46af-8d1a-0cd5db894797&redesignExport=true&languageId=1&selectedModule=PerformanceGraphView&selectedSubModule=Graph&yearFlag=tenYearFlag&indexId=124533",
-              file_name = "ord",
-              mode = "wb",
-              type = ".xls")
+url <- "https://www.spglobal.com/spdji/en/idsexport/file.xls?hostIdentifier=48190c8c-42c4-46af-8d1a-0cd5db894797&redesignExport=true&languageId=1&selectedModule=PerformanceGraphView&selectedSubModule=Graph&yearFlag=tenYearFlag&indexId=124533"
+
+headers <- c(
+  "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+)
+
+response <- GET(url, add_headers(.headers=headers))
+
+if (status_code(response) == 200) {
+  writeBin(content(response, "raw"), "data/ord.xls")
+  print("File downloaded successfully")
+} else {
+  print(paste("Failed to download file. Status code:", status_code(response)))
+}
+
 
 #download Austrlaian Government 10 Year bonds to data directory
 download_file(url =
@@ -513,15 +541,15 @@ if (month(Sys.Date()) %in% c(3,4,5,6,7,8,9,10,11) & year(Sys.Date()) == update_y
   update_data(australianstockmarket,
               latest_year) %>% 
   drop_na() %>%
-    saveRDS("data/australianstockmarket.RDS")
+    saveRDS(paste("data/australianstockmarket",latest_year,".RDS"))
 
-    print("Stock market series has been updated")
+    print(paste("Stock market series has been updated" , latest_year))
   
   australianstockmarket <- 
     readRDS("data/australianstockmarket.RDS")
   
   australianstockmarket %>%
-    write.csv("data/australianstockmarket.csv")
+    write.csv(paste("data/australianstockmarket",latest_year,".csv"))
   
 } else{
   print(paste0("Data not available until ", update_date, ". Try again on this date."))

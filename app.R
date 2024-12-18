@@ -312,7 +312,14 @@ make_sine_wave <-
 #create final data frames
 ######################################################################
 australianstockmarket <- 
-  readRDS("data/australianstockmarket.RDS")
+  readRDS("data/archive/australianstockmarket_2023.RDS") %>% 
+  rbind(data.frame(
+    year = 1882,
+    stock_accumulation = NA, 
+    stock_price = NA, 
+    bonds = NA, 
+    inflation = NA  
+  ), .)
 
 #create new real return column and index columns for nominal and real returns
 stock_temp <- 
