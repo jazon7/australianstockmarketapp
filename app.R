@@ -312,7 +312,7 @@ make_sine_wave <-
 #create final data frames
 ######################################################################
 australianstockmarket <- 
-  readRDS("data/archive/australianstockmarket_2023.RDS") %>% 
+  readRDS("data/australianstockmarket.RDS") %>% 
   rbind(data.frame(
     year = 1882,
     stock_accumulation = NA, 

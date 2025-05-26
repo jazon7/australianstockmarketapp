@@ -6,11 +6,9 @@ library(writexl)
 
 # README ------------------------------------------------------------------
 # Execute this code to update the Australian Stock Market Annual Returns to
-# latest available year. The bottleneck for data availability appears to be 
-# CPI from the ABS. The December CPI results are released in Feb/March the 
-# following year. The code below should only 
-
-
+# latest available year. The bottleneck for data availability is CPI from the ABS. 
+# The December CPI results are released in Feb/March the 
+# following year.
 
 
 # Code --------------------------------------------------------------------
@@ -35,15 +33,12 @@ update_date <-
   as.Date
 
 
-############################################################################
-#function to extract the creation date of a file 
-############################################################################
+# function to extract the creation date of a file  -----------------------
 find_create_date_of_file <- function(path) {
   return(as.Date(file.info(path)$ctime))
 }
-############################################################################
-#function to remove na and extract year and month from date into new columns 
-############################################################################
+
+# function to remove na and extract year and month from date into --------
 clean_df <- function(df){
   df <- na.omit(df)
   df$date <- as.Date(df$date)
@@ -56,9 +51,7 @@ clean_df <- function(df){
 }
 
 
-######################################################################################
-#function to create summary table of Dec Ave index value and % change from previous year
-######################################################################################
+# function to create summary table of Dec Ave index value and % c --------
 dec_summary <- function(df){
   df %>% 
     group_by(year, month) %>% 
@@ -73,9 +66,8 @@ dec_summary <- function(df){
   
 }
 
-##########################################################################
-#function to downnload source data (csv,xls,xlsx) to data/source directory
-##########################################################################
+
+# function to downnload source data (csv,xls,xlsx) to data/source --------
 download_file <- function(url, file_name, mode, type){
   
   headers = c(
@@ -109,9 +101,8 @@ download_file <- function(url, file_name, mode, type){
   
 }
 
-#################################################################################
-#function to web scrape abs web page to find latest cpi release (e.g. Sep 2022)
-#################################################################################
+
+# function to web scrape abs web page to find latest cpi release  --------
 find_cpi_release <- function(){
   
   page <-
@@ -135,10 +126,7 @@ find_cpi_release <- function(){
   return(out)
 }
 
-
-#################################################################################
-##function to get cpi based on year input
-#################################################################################
+# function to get cpi based on year input ---------------------------------
 get_cpi <- 
   function(yr){
     
@@ -165,17 +153,14 @@ get_cpi <-
     
   }
 
-#################################################################################
-#variable to store cpi file name to download from abs website
-#################################################################################
+
+# variable to store cpi file name to download from abs website -----------
 cpi_xlsx_file <- 
   paste0("https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/consumer-price-index-australia/",
          find_cpi_release(),
          "/640101.xlsx")
 
-
-
-#download All Ordinaries Total Return index fromspglobal to data directory
+# download All Ordinaries Total Return index fromspglobal to data --------
 url <- "https://www.spglobal.com/spdji/en/idsexport/file.xls?hostIdentifier=48190c8c-42c4-46af-8d1a-0cd5db894797&redesignExport=true&languageId=1&selectedModule=PerformanceGraphView&selectedSubModule=Graph&yearFlag=tenYearFlag&indexId=124632"
 
 headers <- c(
@@ -191,7 +176,8 @@ if (status_code(response) == 200) {
   print(paste("Failed to download file. Status code:", status_code(response)))
 }
 
-#download All Ordinaries Price index from spglobal to data directory
+
+# download All Ordinaries Price index from spglobal to data direc --------
 url <- "https://www.spglobal.com/spdji/en/idsexport/file.xls?hostIdentifier=48190c8c-42c4-46af-8d1a-0cd5db894797&redesignExport=true&languageId=1&selectedModule=PerformanceGraphView&selectedSubModule=Graph&yearFlag=tenYearFlag&indexId=124533"
 
 headers <- c(
@@ -208,14 +194,16 @@ if (status_code(response) == 200) {
 }
 
 
-#download Austrlaian Government 10 Year bonds to data directory
+
+# download Austrlaian Government 10 Year bonds to data directory ---------
 download_file(url =
                 "https://www.rba.gov.au/statistics/tables/xls/f02d.xlsx",
               file_name = "bonds",
               mode = "wb",
               type = ".xlsx")
 
-#download cpi index from ABS
+
+# download cpi index from ABS --------------------------------------------
 download_file(cpi_xlsx_file,
               file_name = 'cpi', 
               mode = "wb",
@@ -509,50 +497,45 @@ get_bonds <-
     
   }
 
+
 ####################################
 #function to update annual return data 
 #with latest stock tr , price, bonds, and inflation
 ####################################
-update_data <- 
-  function(df, update_year){
-    
-    new_date <- 
-      update_year
-    
-    new_row <- 
-      c(new_date,
-        get_total_return(new_date),
-        get_price_return(new_date),
-        get_bonds(new_date),
-        get_cpi(new_date))
-    
+update_data <- function(df, latest_year) {
+  new_row <-  c(latest_year,
+                get_total_return(latest_year),
+                get_price_return(latest_year),
+                get_bonds(latest_year),
+                get_cpi(latest_year)
+  )
+  
+  df <-
     rbind(df, new_row)
-    
-  }
+  
+  return(df)
+}
 
+
+#find latest year for data
 latest_year <- 
   find_max_column(dec_ord, 
                   year)
-
 #check if current month is March of the update year and if so update the dataset
-if (month(Sys.Date()) %in% c(3,4,5,6,7,8,9,10,11) & year(Sys.Date()) == update_year){
+if (year(Sys.Date()) == update_year & month(Sys.Date()) >= 3) {
   print("Updating Data. This may take a while..........")
- 
-  update_data(australianstockmarket,
-              latest_year) %>% 
-  drop_na() %>%
-    saveRDS(paste("data/australianstockmarket",latest_year,".RDS"))
+  
+  update_data(australianstockmarket, latest_year) %>% 
+    drop_na() %>%
+    saveRDS(paste0("data/australianstockmarket.RDS"))
 
-    print(paste("Stock market series has been updated" , latest_year))
+  update_data(australianstockmarket, latest_year) %>%
+    drop_na() %>%
+    write.csv(paste0("data/australianstockmarket.csv"))
   
-  australianstockmarket <- 
-    readRDS("data/australianstockmarket.RDS")
   
-  australianstockmarket %>%
-    write.csv(paste("data/australianstockmarket",latest_year,".csv"))
-  
-} else{
+  print(paste("Stock market series has been updated", latest_year))
+
+} else {
   print(paste0("Data not available until ", update_date, ". Try again on this date."))
-  australianstockmarket <- 
-    readRDS("data/australianstockmarket.RDS")
 }
