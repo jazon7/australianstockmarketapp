@@ -1,66 +1,112 @@
 <h3>Introduction</h3>
+<p>
+  This app provides a comprehensive, up-to-date long-term history of the Australian stock market, spanning from 1883 to today.
+  It features annual returns for:
+</p>
+<ul>
+  <li>The Australian stock price index</li>
+  <li>The stock price index with dividends reinvested</li>
+  <li>Australian Government 10-year bonds</li>
+  <li>The Australian Consumer Price Index (CPI)</li>
+</ul>
+<p>
+  These annual returns are used to construct both nominal and inflation-adjusted long-term indices, as well as
+  <a href="https://www.investopedia.com/terms/r/rollingreturns.asp" target="_blank" rel="noopener">rolling returns</a>.
+</p>
 
-<p>This app provides an up-to-date long term history of the Australian stock market.</p>
+<hr>
 
-<p>The app showcases discrete annual returns of the Australian stock price index, stock price index plus dividends reinvested, Australian Government 10 year bonds, and the Austrailan consumer price index in each December from 1883 to today.</p>
+<h3>Data Methodology</h3>
 
-<p>These discrete annual return values are used to create nominal and inflation adjusted long term indices, plus <a href="https://www.investopedia.com/terms/r/rollingreturns.asp">rolling returns.</a></p>
+<h4>Primary Sources</h4>
+<p>
+  The core annual return data (1883–2010) are sourced from
+  <a href="https://research.bond.edu.au/en/publications/the-historical-equity-risk-premium-in-australia-post-gfc-and-128-" target="_blank" rel="noopener">
+    Brailsford et al. (2012)
+  </a>,
+  which extends earlier work by
+  <a href="https://research.bond.edu.au/en/publications/re-examination-of-the-historical-equity-risk-premium-in-australia" target="_blank" rel="noopener">
+    Brailsford et al. (2008)
+  </a>.
+</p>
 
-
-<br>
-<h3>Data methodology</h3>
-
-<p>The primary discrete annual returns used in the app are sourced from <a href="https://research.bond.edu.au/en/publications/the-historical-equity-risk-premium-in-australia-post-gfc-and-128-">Brailsford et al. (2012) </a>- who provided estimates of the Australian stock market returns from 1882 to 2010. <a href="https://research.bond.edu.au/en/publications/the-historical-equity-risk-premium-in-australia-post-gfc-and-128-"></p>
-
-<p>Brailsford et al. (2012)</a>&nbsp;was an expansion of a previous paper by&nbsp;<a href="https://research.bond.edu.au/en/publications/the-historical-equity-risk-premium-in-australia-post-gfc-and-128-">Brailsford et al.&nbsp;(2008)</a>.&nbsp;</p>
-
-<h5>Brailsford et al.&nbsp;(2008)</h5>
-
-<p><a href="https://research.bond.edu.au/en/publications/re-examination-of-the-historical-equity-risk-premium-in-australia">Brailsford et al.&nbsp;(2008)</a> generated a historic Australian stock price series from 1883-2005 by aggregating three previous data series:</p>
-
+<h5>Brailsford et al. (2008)</h5>
+<p>
+  Brailsford et al. (2008) constructed a historical Australian stock price series from 1883–2005 by combining three major indices:
+</p>
 <ol>
-<li>The Commercial and Industrial index from 1882-1936.</li>
-<li>The Sydney All Ordinary Shares price index from 1936-1979.</li>
-<li>The Australian Stock Exchange (ASX) All Ordinaries price index from 1980-2005.</li>
+  <li>Commercial and Industrial Index (1882–1936)</li>
+  <li>Sydney All Ordinary Shares Price Index (1936–1979)</li>
+  <li>ASX All Ordinaries Price Index (1980–2005)</li>
+</ol>
+<p>
+  For data up to December 1957, they relied on the work of
+  <a href="https://searchworks.stanford.edu/view/1408035" target="_blank" rel="noopener">Don Lamberton</a>,
+  who retrospectively compiled:
+</p>
+<ul>
+  <li>The Commercial Industrial Price Index (Jan 1875–Jun 1936)</li>
+  <li>The All Ordinary Shares Price Index (Jul 1936–Dec 1957)</li>
+</ul>
+<p>
+  Brailsford et al. (2008) used December values to form their annual series and incorporated historical dividend yields to create an accumulation index.
+</p>
+
+<h5>Brailsford et al. (2012)</h5>
+<p>
+  <a href="https://research.bond.edu.au/en/publications/the-historical-equity-risk-premium-in-australia-post-gfc-and-128-" target="_blank" rel="noopener">
+    Brailsford et al. (2012)
+  </a>
+  extended the series to 2010 by:
+</p>
+<ul>
+  <li>Using the average December values of the All Ordinaries Accumulation and Price Indices (2006–2010)</li>
+  <li>Recording 10-year bond yields at each December’s end</li>
+  <li>Incorporating December CPI values from the Australian Bureau of Statistics</li>
+</ul>
+
+<hr>
+
+<h4>Data Extension (2011–Present)</h4>
+<p>
+  For years 2011 to today, the same methodology was applied:
+</p>
+<ol>
+  <li>
+    <strong>Stock Indices:</strong>
+    December averages of the
+    <a href="http://au.spindices.com/indices/equity/all-ordinaries" target="_blank" rel="noopener">
+      S&amp;P Dow Jones Indices All Ordinaries (Price Return and Total Return)
+    </a>
+  </li>
+  <li>
+    <strong>10-Year Bonds:</strong>
+    December-end yields from the
+    <a href="https://www.rba.gov.au/statistics/tables/" target="_blank" rel="noopener">
+      RBA’s historical data
+    </a>
+  </li>
+  <li>
+    <strong>Inflation (CPI):</strong>
+    December values from the
+    <a href="https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/consumer-price-index-australia/latest-release" target="_blank" rel="noopener">
+      ABS CPI series
+    </a>
+  </li>
 </ol>
 
-<p><a href="https://research.bond.edu.au/en/publications/re-examination-of-the-historical-equity-risk-premium-in-australia">Brailsford et al.&nbsp;(2008)'s</a> price index data up to December 1957 was the same as the&nbsp;stock return data developed by <a href="https://searchworks.stanford.edu/view/1408035">Don Lamberton</a>. Lamberton retrospectively constructed stock price index data from January 1875 to December 1957.&nbsp;&nbsp;Lamberton's&nbsp;data consisted of two series:&nbsp;</p>
+<hr>
 
-<ol>
-<li>The Commercial Industrial price index from January 1875-June 1936.</li>
-<li>The All Ordinary Shares price index from July 1936-December 1957.</li>
-</ol>
-
-<p><a href="https://research.bond.edu.au/en/publications/re-examination-of-the-historical-equity-risk-premium-in-australia">Brailsford et al. (2008)</a> took the December values of the long-term stock price index each year to form their historical stock price index series from 1883-2005. They also incorporated estimates of historical dividend yields to form the stock accumulation index series for each calendar year from 1883-2005.&nbsp;</p>
-
-<h5>Brailsford et al.&nbsp;(2012)</h5>
-
-<p><a href="https://research.bond.edu.au/en/publications/the-historical-equity-risk-premium-in-australia-post-gfc-and-128-">Brailsford et al&nbsp;(2012)</a> added to their previous work by expanding their stock market series to 2010. They&nbsp;expanded their series by:</p>
-
-
-<ol>
-<li>Setting the 2006-2010 Accumulation/Price index annual values to the <strong>average</strong> value of the All Ordinaries Accumulation/Price Index in each December.</li>
-<li>Setting the 2006-2010 annual 10 year bond values equal to the 10 year bond yield at the end of each December.</li>
-<li>Setting the 2006-2010 value equal to the December year end values of the 'CPI All Groups Weighted Average of Eight Capital Cities' for the respective years from the Australian Bureau of Statistics.</li>
-</ol>
-
-<br>
-<h3>This App</h3>
-
-<p>The stock market, bond, and inflation annual returns in this app are taken directly from <a href="https://research.bond.edu.au/en/publications/the-historical-equity-risk-premium-in-australia-post-gfc-and-128-">Brailsford et al. (2012)</a> for the years 1883-2010.</p>
-
-<p>Then, the same methodology from <a href="https://research.bond.edu.au/en/publications/the-historical-equity-risk-premium-in-australia-post-gfc-and-128-">Brailsford et al. (2012)</a> was used to create stock market,bond, and inflation values for the years&nbsp;2011-today.&nbsp;</p>
-
-<p>Specifically, the data series was expanded by:</p>
-
-
-<ol>
-<li>Setting the 2011-today <strong>Stock Price</strong> and <strong>Accumulation index</strong> annual values to the <strong>average</strong> value of the <a href="http://au.spindices.com/indices/equity/all-ordinaries">S&amp;P Down Jones Indices</a> All Ordinaries (Price Return) and All Ordinaries (Total Return) indices respectively in each December.</li>
-<li>Setting the 2011-today annual <strong>10 year bond</strong> values equal to the <a title="Link, opening in a new window, to XLS file." href="https://www.rba.gov.au/statistics/tables/xls/f02hist.xls?v=2019-07-27-10-34-50" target="_blank" rel="noopener noreferrer">Australian Government 10 year bond yield</a> at the end of each December.</li>
-<li>Setting the 2011-today <strong>Inflation</strong> value equal to the December year end values of the <a href="https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/consumer-price-index-australia/latest-release">ABS CPI: Groups, Weighted Average of Eight Capital Cities, Index Numbers series</a> for the respective years.</li>
-</ol>
-
-
-<p>The latest data series (1883-today) can be downloaded in csv format <a href="https://raw.githubusercontent.com/jazon7/australianstockmarketapp/main/data/australianstockmarket.csv">here.</a> </p>
-
-<p>The app code is available on <a href="https://github.com/jazon7/australianstockmarketapp">GitHub.</a> </p>
+<h4>Downloads &amp; Code</h4>
+<ul>
+  <li>
+    <a href="https://raw.githubusercontent.com/jazon7/australianstockmarketapp/main/data/australianstockmarket.csv" target="_blank" rel="noopener">
+      Download the full dataset (CSV)
+    </a>
+  </li>
+  <li>
+    <a href="https://github.com/jazon7/australianstockmarketapp" target="_blank" rel="noopener">
+      View the app code on GitHub
+    </a>
+  </li>
+</ul>

@@ -9,14 +9,18 @@ library(rvest)
 library(DT)
 library(thematic)
 library(showtext)
-
+library(bslib)
 
 options(warn=-1)
 options(scipen = 999)
 
-app_theme <- 
-  bslib::bs_theme(bootswatch = "zephyr",
-                  base_font = bslib::font_google("Open Sans"))
+app_theme <- bs_theme(
+  version = 5,
+  bootswatch = "flatly",
+  base_font = font_google("Open Sans"),
+  primary = "#0d6efd",          # Customize primary color if desired
+  "font-size-base" = "1.1rem"   # Slightly larger base font for readability
+)
 
 ####################################
 #convert data to tidy format (pivot longer)
@@ -844,6 +848,8 @@ server <- function(input, output) {
       selection = list(target = 'column'),
       # filter = list(position = 'top', clear = TRUE),
       rownames = FALSE,
+      style = "bootstrap5",
+      class = "table-striped table-hover table-bordered compact",
       extensions = 'Buttons',
       options = list(orderClasses = TRUE,
                      scrollY=TRUE,
@@ -888,6 +894,8 @@ server <- function(input, output) {
       data = data,
       caption = caption,
       rownames = FALSE,
+      style = "bootstrap5",
+      class = "table-striped table-hover table-bordered compact",
       options = list(
         paging = FALSE,
         info = FALSE,
@@ -938,6 +946,8 @@ server <- function(input, output) {
       selection = list(target = 'column'),
       filter = list(position = 'top', clear = FALSE),
       rownames = FALSE,
+      style = "bootstrap5",
+      class = "table-striped table-hover table-bordered compact",
       extensions = 'Buttons',
       options = list(orderClasses = TRUE,
                      scrollY=TRUE,
@@ -1022,6 +1032,8 @@ server <- function(input, output) {
       selection = list(target = 'column'),
       filter = list(position = 'top', clear = FALSE),
       rownames = FALSE,
+      style = "bootstrap5",
+      class = "table-striped table-hover table-bordered compact",
       extensions = 'Buttons',
       options = list(orderClasses = TRUE,
                      scrollY=TRUE,
